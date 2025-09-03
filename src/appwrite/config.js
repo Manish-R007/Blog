@@ -79,15 +79,13 @@ export class Service {
         }
     }
 
-    // storage service
-
     async uploadFile(file) {
   try {
     return await this.bucket.createFile(
       conf.appwriteBucketId,
       ID.unique(),
       file,
-      ['read("any")']  // Add this for public read access
+      ['read("any")']  
     );
   } catch (error) {
     console.log("Appwrite service :: uploadFile() :: ", error);
@@ -100,8 +98,8 @@ async updateFilePermissions(fileId) {
     return await this.bucket.updateFile(
       conf.appwriteBucketId,
       fileId,
-      undefined,  // No name change
-      ['read("any")']  // Set public read permissions
+      undefined,  
+      ['read("any")']  
     );
   } catch (error) {
     console.error("Appwrite service :: updateFilePermissions() ::", error);
@@ -132,7 +130,7 @@ getFileView(fileId) {
         }
     }
 
-    g// In Service.js
+
         getFilePreview(fileId) {
         try {
             const url = this.bucket.getFilePreview(conf.appwriteBucketId, fileId);
