@@ -6,15 +6,14 @@ import {createBrowserRouter, RouterProvider} from "react-router-dom"
 import { Provider } from 'react-redux'
 import store from "./store/store.js"
 
-
 import Home from "./pages/Home.jsx"
 import Login from "./pages/Login.jsx"
 import Protected from "./components/AuthLayout.jsx"
 import Signup from "./pages/Signup.jsx"
-import AllPosts from "./pages/AllPosts.jsx"
+import Profile from "./pages/Profile.jsx"
 import AddPost from "./pages/AddPost.jsx"
-import EditPost from "./pages/EditPost.jsx"
 import Post from "./pages/Post.jsx"
+
 
 const router = createBrowserRouter([
   {
@@ -42,10 +41,11 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: "/all-posts",
+        // Combined route - handles both /profile and /profile/:userId
+        path: "/profile/:userId?",
         element: (
           <Protected authentication>
-            <AllPosts />
+            <Profile/>
           </Protected>
         )
       },
@@ -58,25 +58,36 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: "/edit-post/:slug",
+        path: "/edit-post/:postId",
         element: (
           <Protected authentication>
-            <EditPost />
+            <AddPost />
           </Protected>
         )
       },
       {
         path: "/post/:slug",
-        element: (
-          <Protected authentication>
-            <Post />
-          </Protected>
-        )
+        element: <Post/>
+      },
+      {
+        // Optional: Add a posts page if you want to show all posts
+        path: "/posts",
+        element: <Home /> // or <AllPosts /> if you have that component
       }
     ]
+  },
+  {
+    // Optional: Add a 404 page
+    path: "*",
+    element: <div className="flex items-center justify-center h-screen">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-800 mb-4">404 - Page Not Found</h1>
+        <p className="text-gray-600 mb-4">The page you're looking for doesn't exist.</p>
+        <a href="/" className="text-blue-500 hover:text-blue-700">Go back home</a>
+      </div>
+    </div>
   }
 ])
-
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

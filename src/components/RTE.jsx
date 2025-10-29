@@ -2,7 +2,6 @@ import React from 'react'
 import {Controller} from "react-hook-form"
 import {Editor} from "@tinymce/tinymce-react"
 
-
 function RTE({
     name, control, label, defaultValue = ""
 }) {
@@ -21,32 +20,23 @@ function RTE({
             init={{
                 branding: false,
                 height: 500,
-                menubar: true,
+                menubar: false, // Simplify by removing menubar
                 plugins: [
-                    "image",
-                    "advlist",
-                    "autolink",
-                    "lists",
-                    "link",
-                    "image",
-                    "charmap",
-                    "preview",
-                    "anchor",
-                    "searchreplace",
-                    "visualblocks",
-                    "code",
-                    "fullscreen",
-                    "insertdatetime",
-                    "media",
-                    "table",
-                    "code",
-                    "help",
-                    "wordcount",
-                    "anchor",
+                    "advlist", "autolink", "lists", "link", "image", 
+                    "charmap", "preview", "anchor", "searchreplace", 
+                    "visualblocks", "code", "fullscreen", "insertdatetime", 
+                    "media", "table", "help", "wordcount"
                 ],
-                toolbar:
-                "undo redo | blocks | image | bold italic forecolor | alignleft aligncenter bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |removeformat | help",
-                content_style: "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+                toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist outdent indent | link image | removeformat | help",
+                content_style: `
+                    body { 
+                        font-family: Helvetica, Arial, sans-serif; 
+                        font-size: 14px;
+                        line-height: 1.6;
+                        color: #333;
+                        background: #fff;
+                    }
+                `,
             }}
             onEditorChange={onChange}
             />

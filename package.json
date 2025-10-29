@@ -14,14 +14,18 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@cerebras/cerebras_cloud_sdk": "^1.56.1",
     "@google/genai": "^1.17.0",
     "@reduxjs/toolkit": "^2.8.2",
     "@tinymce/tinymce-react": "^6.3.0",
     "appwrite": "^18.2.0",
     "axios": "^1.11.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "gpt4all": "^4.0.0",
     "html-react-parser": "^5.2.6",
+    "node-appwrite": "^20.2.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",

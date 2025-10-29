@@ -2,7 +2,7 @@ import React from 'react'
 
 function Logo({width = "75px"}) {
   return (
-    <img src='https://tse3.mm.bing.net/th/id/OIP.yrT8H30JcNdrMhRPm1O2lQHaFM?pid=Api&P=0&h=180'  style={{width}} alt='Logo placeholder' />
+    <img src='https://img.freepik.com/premium-vector/word-concept-color-geometric-shapes-blog_205544-12899.jpg'  style={{width}} alt='Logo placeholder' />
   )
 }
 
