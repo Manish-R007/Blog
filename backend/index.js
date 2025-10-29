@@ -2,6 +2,7 @@ import express from "express"
 import cors from "cors"
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import dotenv from "dotenv"
+import conf from "../src/conf/conf";
 
 dotenv.config()
 
@@ -12,7 +13,7 @@ app.use(express.json({
 }))
 
 const port = process.env.PORT || 3000
-const apikey = process.env.CEREBRAS_API_KEY
+const apikey = conf.aiblogeneratorkey || ""
 console.log(apikey);
 
 
