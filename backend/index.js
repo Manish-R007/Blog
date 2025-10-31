@@ -2,7 +2,7 @@ import express from "express"
 import cors from "cors"
 import Cerebras from '@cerebras/cerebras_cloud_sdk';
 import dotenv from "dotenv"
-import conf from "../src/conf/conf";
+import conf from "../src/conf/conf.js";
 
 dotenv.config()
 
