@@ -155,20 +155,42 @@ export class Service {
         }
     }
 
-    // File upload methods
+    // File upload methods - IMPROVED VERSION
     async uploadFile(file) {
         try {
-            console.log("🔄 Uploading file:", file.name);
-            
+            console.log("🔄 Uploading file:", {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                throw new Error("File size exceeds 5MB limit");
+            }
+
+            // Validate file type for images
+            if (!file.type.startsWith('image/')) {
+                throw new Error("Only image files are allowed");
+            }
+
             const result = await this.storage.createFile(
                 conf.appwriteBucketId,
                 ID.unique(),
                 file
             );
-            console.log("✅ File uploaded successfully:", result);
+            
+            console.log("✅ File uploaded successfully:", {
+                fileId: result.$id,
+                bucketId: conf.appwriteBucketId
+            });
             return result;
         } catch (error) {
-            console.log("❌ Appwrite service :: uploadFile() :: ", error);
+            console.log("❌ Appwrite service :: uploadFile() :: ", {
+                message: error.message,
+                code: error.code,
+                type: error.type
+            });
             throw error;
         }
     }
@@ -177,6 +199,13 @@ export class Service {
         try {
             console.log("🔄 Deleting file:", fileId);
             
+            // First check if file exists
+            const fileExists = await this.checkFileExists(fileId);
+            if (!fileExists) {
+                console.log("ℹ️ File doesn't exist, nothing to delete");
+                return true;
+            }
+            
             await this.storage.deleteFile(
                 conf.appwriteBucketId,
                 fileId
@@ -184,12 +213,16 @@ export class Service {
             console.log("✅ File deleted successfully");
             return true;
         } catch (error) {
-            console.log("❌ Appwrite service :: deleteFile() :: ", error);
+            console.log("❌ Appwrite service :: deleteFile() :: ", {
+                message: error.message,
+                code: error.code,
+                type: error.type
+            });
             return false;
         }
     }
 
-    getFilePreview(fileId) {
+    getFilePreview(fileId, width = 400, height = 400, quality = 90) {
         try {
             if (!fileId) {
                 console.log("❌ No fileId provided for preview");
@@ -200,7 +233,18 @@ export class Service {
             
             const result = this.storage.getFilePreview(
                 conf.appwriteBucketId,
-                fileId
+                fileId,
+                width,
+                height,
+                undefined, // gravity
+                quality,
+                undefined, // borderWidth
+                undefined, // borderColor
+                undefined, // borderRadius
+                undefined, // opacity
+                undefined, // rotation
+                undefined, // background
+                undefined  // output
             );
             console.log("✅ File preview URL generated:", result);
             return result;
@@ -254,16 +298,41 @@ export class Service {
 
     async checkFileExists(fileId) {
         try {
-            if (!fileId) return false;
+            if (!fileId) {
+                console.log("❌ No fileId provided for existence check");
+                return false;
+            }
+            
+            console.log("🔍 Checking if file exists:", fileId);
+            const file = await this.storage.getFile(
+                conf.appwriteBucketId,
+                fileId
+            );
+            console.log("✅ File exists:", !!file);
+            return !!file;
+        } catch (error) {
+            console.log("❌ File does not exist or error:", {
+                message: error.message,
+                code: error.code,
+                type: error.type
+            });
+            return false;
+        }
+    }
+
+    // Add this method to get file information
+    async getFileInfo(fileId) {
+        try {
+            if (!fileId) return null;
             
             const file = await this.storage.getFile(
                 conf.appwriteBucketId,
                 fileId
             );
-            return !!file;
+            return file;
         } catch (error) {
-            console.log("❌ File does not exist or error:", error);
-            return false;
+            console.log("❌ Appwrite service :: getFileInfo() :: ", error);
+            return null;
         }
     }
 }

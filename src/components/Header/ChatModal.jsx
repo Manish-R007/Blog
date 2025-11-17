@@ -9,8 +9,9 @@ const ChatModal = ({ onClose }) => {
     const [copied, setCopied] = useState(false);
     const [userName, setUserName] = useState("");
     const [showTemplates, setShowTemplates] = useState(true);
+    const [templateSelected, setTemplateSelected] = useState(false);
 
-    // Blog-specific templates
+    // Blog-specific templates - Only 4 as requested
     const blogTemplates = [
         {
             title: "📝 Complete Blog Post",
@@ -39,20 +40,6 @@ const ChatModal = ({ onClose }) => {
             placeholder: "Enter your blog topic...",
             icon: "🖼️",
             autoMessage: "I need image suggestions for my blog. Please suggest 8-10 specific image ideas and visuals. Include types of images, styles, and what they should depict."
-        },
-        {
-            title: "📊 Listicle Post",
-            prompt: "Create a listicle blog post about:",
-            placeholder: "Enter your listicle topic...",
-            icon: "📊",
-            autoMessage: "I want to create a listicle blog post. Please create a listicle with 7-10 well-explained points. Include relevant image suggestions for each point."
-        },
-        {
-            title: "🔍 SEO-Focused Post",
-            prompt: "Write an SEO-optimized blog post about:",
-            placeholder: "Enter your SEO topic...",
-            icon: "🔍",
-            autoMessage: "I need an SEO-optimized blog post. Please write content focusing on keywords, meta descriptions, and search-friendly structure. Include image suggestions with alt text ideas."
         }
     ];
 
@@ -133,8 +120,9 @@ const ChatModal = ({ onClose }) => {
     };
 
     const handleTemplateClick = async (template) => {
-        // Hide templates section
+        // Hide templates section and mark template as selected
         setShowTemplates(false);
+        setTemplateSelected(true);
         
         // Set the prompt in the input field for user to customize
         setMessage(`${template.prompt} `);
@@ -182,12 +170,9 @@ const ChatModal = ({ onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!message.trim()) return;
-
-        // Hide templates when user starts typing
-        if (showTemplates) {
-            setShowTemplates(false);
-        }
+        
+        // Only allow submission if template is selected and message is not empty
+        if (!templateSelected || !message.trim()) return;
 
         setLoading(true);
         setCopied(false);
@@ -251,6 +236,7 @@ const ChatModal = ({ onClose }) => {
         setConversation([]);
         setMessage("");
         setShowTemplates(true);
+        setTemplateSelected(false);
     };
 
     const showTemplatesSection = () => {
@@ -302,11 +288,11 @@ const ChatModal = ({ onClose }) => {
                     </div>
                 </div>
 
-                {/* Blog Templates Grid - Only show when no conversation or explicitly shown */}
+                {/* Blog Templates Grid - Show templates until one is selected */}
                 {showTemplates && (
                     <div className="p-6 border-b border-purple-500/20">
-                        <h3 className="text-lg font-semibold text-purple-300 mb-4">Choose a Template</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <h3 className="text-lg font-semibold text-purple-300 mb-4">Choose a Template to Start</h3>
+                        <div className="grid grid-cols-2 gap-3">
                             {blogTemplates.map((template, index) => (
                                 <button
                                     key={index}
@@ -331,18 +317,18 @@ const ChatModal = ({ onClose }) => {
 
                 {/* Chat Area */}
                 <div className={`flex-1 overflow-y-auto p-6 space-y-4 ${showTemplates ? 'max-h-64' : 'max-h-96'}`}>
-                    {conversation.length === 0 && !showTemplates ? (
+                    {conversation.length === 0 && !templateSelected ? (
                         <div className="text-center text-gray-400 py-12">
                             <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-500/30">
-                                <span className="text-3xl">💬</span>
+                                <span className="text-3xl">📝</span>
                             </div>
-                            <p className="text-lg font-semibold text-white mb-2">Start a Conversation</p>
-                            <p className="text-purple-200">Choose a template or type your request below</p>
+                            <p className="text-lg font-semibold text-white mb-2">Select a Template to Begin</p>
+                            <p className="text-purple-200">Choose from the templates above to start creating content</p>
                         </div>
                     ) : conversation.length === 0 && showTemplates ? (
                         <div className="text-center text-gray-400 py-8">
                             <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-purple-500/30">
-                                <span className="text-2xl">📝</span>
+                                <span className="text-2xl">🚀</span>
                             </div>
                             <p className="text-lg font-semibold text-white mb-2">Ready to Create</p>
                             <p className="text-purple-200">Select a template above to get started</p>
@@ -402,40 +388,37 @@ const ChatModal = ({ onClose }) => {
                     )}
                 </div>
 
-                {/* Input Area */}
-                <div className="p-6 border-t border-purple-500/20">
-                    <form onSubmit={handleSubmit} className="flex gap-3">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            className="flex-1 p-4 bg-gray-800/80 border border-purple-500/30 rounded-xl text-white placeholder-purple-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/30 transition-all"
-                            placeholder={showTemplates ? "Or type your specific request..." : "Continue the conversation or ask for modifications..."}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSubmit(e);
-                                }
-                            }}
-                            onFocus={() => {
-                                if (showTemplates) {
-                                    setShowTemplates(false);
-                                }
-                            }}
-                        />
-                        <button
-                            type="submit"
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-4 rounded-xl font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                            disabled={loading || !message.trim()}
-                        >
-                            {loading ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                'Send'
-                            )}
-                        </button>
-                    </form>
-                </div>
+                {/* Input Area - Only show after template is selected */}
+                {templateSelected && (
+                    <div className="p-6 border-t border-purple-500/20">
+                        <form onSubmit={handleSubmit} className="flex gap-3">
+                            <input
+                                type="text"
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                className="flex-1 p-4 bg-gray-800/80 border border-purple-500/30 rounded-xl text-white placeholder-purple-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/30 transition-all"
+                                placeholder="Continue the conversation or ask for modifications..."
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSubmit(e);
+                                    }
+                                }}
+                            />
+                            <button
+                                type="submit"
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-4 rounded-xl font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                                disabled={loading || !message.trim()}
+                            >
+                                {loading ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    'Send'
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -89,6 +89,41 @@ export class AuthService {
             };
         }
     }
+
+    async forgotPassword({ email, redirectUrl }) {
+    try {
+        const response = await this.account.createRecovery(email, redirectUrl);
+        console.log("✅ Password reset link sent:", response);
+        
+        return {
+            success: true,
+            message: "Password reset email sent. Please check your inbox."
+        };
+    } catch (error) {
+        console.error("❌ Failed to send reset email:", error);
+
+        let errorMessage = "Failed to send reset email. Try again later.";
+        if (error.code === 404) {
+            errorMessage = "Email not found. Please register first.";
+        }
+
+        return {
+            success: false,
+            error: errorMessage
+        };
+    }
+}
+
+async updatePassword({ userId, secret, newPassword }) {
+        try {
+            const response = await this.account.updateRecovery(userId, secret, newPassword, newPassword);
+            return { success: true, message: "Password updated successfully!" };
+        } catch (error) {
+            console.log(error);
+            return { success: false, message: "Password update failed" };
+        }
+    }
+
     
     async getCurrentUser(){
         try {

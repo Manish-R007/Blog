@@ -135,6 +135,10 @@ function Login() {
                         <p className="text-red-200 text-xs mt-1 -mt-3">{errors.password.message}</p>
                     )}
 
+                    <Link to="/forgot-password" className="block text-sm text-left text-white hover:text-blue-100 hover:underline transition mb-2 ml-0">
+                    forgot password?
+                    </Link>
+
                     <Button
                         type="submit"
                         className="w-full bg-gradient-to-r from-sky-400 via-blue-400 to-cyan-300 hover:from-sky-300 hover:to-cyan-200 text-gray-900 font-semibold py-3 rounded-2xl text-base sm:text-lg tracking-wide transition-all duration-300 transform hover:scale-105 shadow-[0_0_25px_rgba(147,197,253,0.5)]"
@@ -151,12 +155,6 @@ function Login() {
                     </Button>
                 </form>
 
-                {/* Demo Info */}
-                <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <p className="text-blue-300 text-sm text-center">
-                        💡 Demo: Use any valid email and password (8+ characters)
-                    </p>
-                </div>
 
                 {/* Footer */}
                 <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-blue-200/20 text-center">

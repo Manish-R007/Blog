@@ -12,13 +12,13 @@ function Profile() {
   const [profileUser, setProfileUser] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [postsLoading, setPostsLoading] = useState(true) // Add separate posts loading state
+  const [postsLoading, setPostsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false)
   const [profileImage, setProfileImage] = useState(null)
   const [profileImagePreview, setProfileImagePreview] = useState('')
 
-  // Function to get user info - UPDATED VERSION
+  // Function to get user info
   const getUserInfo = async (userId) => {
     try {
       const storedProfilePic = localStorage.getItem(`profilePic_${userId}`);
@@ -70,7 +70,7 @@ function Profile() {
     }
   };
 
-  // Simplified function to generate profile picture URL
+  // Improved function to generate profile picture URL
   const getProfilePictureUrl = (fileId) => {
     if (!fileId) {
       console.log("❌ No file ID provided");
@@ -79,9 +79,31 @@ function Profile() {
     
     try {
       console.log("🔄 Generating URL for file:", fileId);
-      const url = appwriteService.getFileView(fileId);
-      console.log("✅ Generated profile picture URL:", url);
-      return url;
+      
+      // Try file view first (most basic access)
+      let url = appwriteService.getFileView(fileId);
+      if (url) {
+        console.log("✅ Using file view URL");
+        return url;
+      }
+      
+      // Fallback to download
+      url = appwriteService.getFileDownload(fileId);
+      if (url) {
+        console.log("✅ Using file download URL");
+        return url;
+      }
+      
+      // Last resort: preview
+      url = appwriteService.getFilePreview(fileId, 200, 200, 90);
+      if (url) {
+        console.log("✅ Using file preview URL");
+        return url;
+      }
+      
+      console.log("❌ All URL generation methods failed");
+      return null;
+      
     } catch (error) {
       console.error("❌ Error generating profile picture URL:", error);
       return null;
@@ -116,6 +138,27 @@ function Profile() {
     });
   };
 
+  // Improved verification function with retry logic
+  const verifyImageUrlWithRetry = async (url, retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        console.log(`🔄 Image verification attempt ${i + 1}/${retries}`);
+        const isValid = await verifyImageUrl(url);
+        if (isValid) {
+          return true;
+        }
+        
+        // Wait before retry
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.log(`❌ Verification attempt ${i + 1} failed:`, error);
+      }
+    }
+    return false;
+  };
+
   // Function to store profile picture reference
   const storeProfilePictureReference = async (userId, fileId) => {
     try {
@@ -135,10 +178,21 @@ function Profile() {
     
     try {
       console.log("🔄 Loading profile picture:", fileId);
+      
+      // First check if file exists in storage
+      const fileExists = await appwriteService.checkFileExists(fileId);
+      if (!fileExists) {
+        console.log("❌ Profile picture file does not exist in storage");
+        localStorage.removeItem(`profilePic_${targetUserId}`);
+        return null;
+      }
+      
+      console.log("✅ Profile picture file exists in storage");
+      
       const previewUrl = getProfilePictureUrl(fileId);
       
       if (previewUrl) {
-        const isValid = await verifyImageUrl(previewUrl);
+        const isValid = await verifyImageUrlWithRetry(previewUrl);
         if (isValid) {
           console.log("✅ Profile picture loaded and verified successfully");
           return previewUrl;
@@ -159,13 +213,51 @@ function Profile() {
     }
   };
 
+  // Function to test CORS and permissions
+  const testImageAccess = async (fileId) => {
+    try {
+      console.log("🧪 Testing image access for:", fileId);
+      
+      const url = getProfilePictureUrl(fileId);
+      console.log("🔗 Testing URL:", url);
+      
+      if (!url) {
+        console.log("❌ Could not generate URL for testing");
+        return false;
+      }
+      
+      // Test with fetch to get detailed CORS info
+      const response = await fetch(url, { 
+        method: 'GET',
+        mode: 'cors'
+      });
+      
+      console.log("📡 Fetch GET response:", {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
+      if (response.ok) {
+        console.log("✅ Image access test: SUCCESS");
+        return true;
+      } else {
+        console.log("❌ Image access test: FAILED -", response.status, response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Image access test failed:", error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     console.log("🎯 Profile page loaded with userId:", userId);
     
     const initializeProfile = async () => {
       try {
         setLoading(true);
-        setPostsLoading(true); // Start posts loading
+        setPostsLoading(true);
         setError(null);
         
         const user = await authService.getCurrentUser();
@@ -211,7 +303,6 @@ function Profile() {
         setError("Failed to load profile data");
       } finally {
         setLoading(false);
-        // Don't set postsLoading to false here - it will be set after posts are loaded
       }
     };
 
@@ -247,7 +338,7 @@ function Profile() {
         console.log("🏁 Posts loading complete");
         setPostsLoading(false);
       });
-  }, [userId, currentUser, loading]); // Added loading as dependency
+  }, [userId, currentUser, loading]);
 
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
@@ -270,98 +361,120 @@ function Profile() {
   };
 
   const uploadProfilePicture = async () => {
-    if (!profileImage || !currentUser) return;
+    if (!profileImage || !currentUser) {
+      console.log("❌ No image selected or user not logged in");
+      alert("Please select an image first");
+      return;
+    }
     
     setUploadingProfilePic(true);
     try {
-      console.log("🔄 Uploading profile picture...");
+      console.log("🔄 Starting profile picture upload...");
       
       const oldProfilePicId = localStorage.getItem(`profilePic_${currentUser.$id}`);
       
       // Upload new profile picture
+      console.log("📤 Uploading file to Appwrite...");
       const uploadedFile = await appwriteService.uploadFile(profileImage);
       
-      if (uploadedFile && uploadedFile.$id) {
-        console.log("✅ Profile picture uploaded successfully:", uploadedFile.$id);
-        
-        // Store the reference
-        await storeProfilePictureReference(currentUser.$id, uploadedFile.$id);
-        
-        // Generate the new profile picture URL
-        const newProfilePictureUrl = getProfilePictureUrl(uploadedFile.$id);
-        
-        if (newProfilePictureUrl) {
-          // Test if the URL loads successfully
-          const img = new Image();
-          
-          const imageLoadPromise = new Promise((resolve, reject) => {
-            img.onload = () => resolve(true);
-            img.onerror = () => reject(new Error("Image failed to load"));
-            img.src = newProfilePictureUrl;
-          });
-          
-          // Wait for image to load or timeout
-          try {
-            await Promise.race([
-              imageLoadPromise,
-              new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("Image load timeout")), 10000)
-              )
-            ]);
-            
-            console.log("✅ New profile picture verified and set successfully");
-            setProfileImagePreview(newProfilePictureUrl);
-            
-            // Delete old profile picture if exists
-            if (oldProfilePicId) {
-              try {
-                await appwriteService.deleteFile(oldProfilePicId);
-                console.log("🗑️ Deleted old profile picture");
-              } catch (deleteError) {
-                console.log("ℹ️ Could not delete old profile picture:", deleteError);
-              }
-            }
-            
-            setProfileUser(prev => ({
-              ...prev,
-              profilePicture: uploadedFile.$id
-            }));
-            setProfileImage(null);
-            
-            // Revoke the blob URL to free memory
-            if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
-              URL.revokeObjectURL(profileImagePreview);
-            }
-            
-            alert("Profile picture updated successfully! 🎉");
-            
-          } catch (loadError) {
-            console.error("❌ New profile picture failed to load:", loadError);
-            // Still update the reference, but show error
-            setProfileUser(prev => ({
-              ...prev,
-              profilePicture: uploadedFile.$id
-            }));
-            setProfileImage(null);
-            alert("Profile picture uploaded but there might be an issue loading it. Please refresh the page.");
-          }
-          
-        } else {
-          throw new Error("Could not generate URL for uploaded profile picture");
-        }
-      } else {
-        throw new Error("Failed to upload image file - no file ID returned");
+      if (!uploadedFile || !uploadedFile.$id) {
+        throw new Error("Upload failed - no file ID returned");
       }
+      
+      console.log("✅ Profile picture uploaded successfully:", uploadedFile.$id);
+      
+      // Verify the file was actually created in storage
+      console.log("🔍 Verifying file exists in storage...");
+      const fileExists = await appwriteService.checkFileExists(uploadedFile.$id);
+      if (!fileExists) {
+        throw new Error("File was uploaded but cannot be found in storage");
+      }
+      console.log("✅ File verified in storage");
+      
+      // Store the reference
+      await storeProfilePictureReference(currentUser.$id, uploadedFile.$id);
+      
+      // Generate the new profile picture URL
+      const newProfilePictureUrl = getProfilePictureUrl(uploadedFile.$id);
+      
+      if (!newProfilePictureUrl) {
+        throw new Error("Could not generate URL for uploaded profile picture");
+      }
+      
+      console.log("🖼️ Testing new profile picture URL...");
+      
+      // Update UI immediately without waiting for verification
+      // (due to potential permission/caching delays)
+      setProfileImagePreview(newProfilePictureUrl);
+      setProfileUser(prev => ({
+        ...prev,
+        profilePicture: uploadedFile.$id
+      }));
+      
+      // Delete old profile picture if exists and is different
+      if (oldProfilePicId && oldProfilePicId !== uploadedFile.$id) {
+        try {
+          console.log("🗑️ Deleting old profile picture:", oldProfilePicId);
+          await appwriteService.deleteFile(oldProfilePicId);
+          console.log("✅ Old profile picture deleted");
+        } catch (deleteError) {
+          console.warn("⚠️ Could not delete old profile picture:", deleteError);
+          // Don't fail the whole process if deletion fails
+        }
+      }
+      
+      // Clear the file input
+      setProfileImage(null);
+      
+      // Revoke the blob URL to free memory
+      if (profileImagePreview && profileImagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+      
+      console.log("🎉 Profile picture updated successfully!");
+      alert("Profile picture updated successfully! 🎉");
+      
+      // Test the new image access in background
+      setTimeout(async () => {
+        const accessTest = await testImageAccess(uploadedFile.$id);
+        if (!accessTest) {
+          console.log("⚠️ New profile picture might have access issues, but reference is saved");
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error("💥 Error uploading profile picture:", error);
-      alert(`Failed to upload profile picture: ${error.message}`);
       
-      // Revert to old preview if available
-      const oldFileId = localStorage.getItem(`profilePic_${currentUser.$id}`);
-      if (oldFileId) {
-        const oldUrl = getProfilePictureUrl(oldFileId);
-        if (oldUrl) {
-          setProfileImagePreview(oldUrl);
+      let errorMessage = "Failed to upload profile picture";
+      
+      if (error.message.includes("permission") || error.code === 401) {
+        errorMessage = `
+          Storage permission denied. 
+          
+          Please check Appwrite Console:
+          1. Go to Storage → Buckets → Your Bucket
+          2. Click Settings → Permissions
+          3. Add these roles:
+             - Role: "member" → Check ALL permissions
+             - Role: "all" → Check ONLY "Read" permission
+          4. Click Update
+        `;
+      } else if (error.message.includes("File was uploaded but cannot be found")) {
+        errorMessage = "File uploaded but cannot be accessed. Check storage bucket permissions.";
+      } else if (error.message.includes("CORS")) {
+        errorMessage = "CORS error. Check your Appwrite CORS settings.";
+      } else {
+        errorMessage = error.message || "Unknown error occurred";
+      }
+      
+      alert(`Upload Error: ${errorMessage}`);
+      
+      // Restore previous state on error
+      const previousFileId = localStorage.getItem(`profilePic_${currentUser.$id}`);
+      if (previousFileId) {
+        const previousUrl = getProfilePictureUrl(previousFileId);
+        if (previousUrl) {
+          setProfileImagePreview(previousUrl);
         }
       }
     } finally {
@@ -506,10 +619,11 @@ function Profile() {
                   className="w-24 h-24 rounded-full object-cover border-4 border-gray-600 shadow-xl"
                   onError={(e) => {
                     console.error("❌ Profile image failed to load in img tag");
-                    
+                    // Hide the broken image and let the initials show
                     e.target.style.display = 'none';
                   }}
                   onLoad={() => console.log("✅ Profile image loaded successfully in img tag")}
+                  crossOrigin="anonymous"
                 />
               ) : (
                 <div 
@@ -519,6 +633,17 @@ function Profile() {
                   {getUserInitials(profileUser)}
                 </div>
               )}
+              
+              {/* Always show the hidden div for initials as fallback */}
+              <div 
+                className="w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-xl border-4 border-gray-600 absolute top-0 left-0"
+                style={{ 
+                  backgroundColor: getAvatarColor(profileUser.$id),
+                  display: profileImagePreview ? 'none' : 'flex'
+                }}
+              >
+                {getUserInitials(profileUser)}
+              </div>
               
               {isCurrentUserProfile && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -576,6 +701,7 @@ function Profile() {
                     )}
                   </button>
                 )}
+                
               </div>
             </div>
           </div>
