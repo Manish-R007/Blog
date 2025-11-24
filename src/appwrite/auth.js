@@ -94,8 +94,8 @@ export class AuthService {
         try {
             const response = await this.account.createOAuth2Session(
                 'google',
-                'http://localhost:5173',
-                'http://localhost:5173/login'
+                'https://blog-26ls.vercel.app/',
+                'https://blog-26ls.vercel.app/login'
             )
 
             console.log(response);
