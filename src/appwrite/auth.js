@@ -90,6 +90,21 @@ export class AuthService {
         }
     }
 
+    async googleLogin(){
+        try {
+            const response = await this.account.createOAuth2Session(
+                'google',
+                'http://localhost:5173',
+                'http://localhost:5173/login'
+            )
+
+            console.log(response);
+            
+        } catch (error) {
+            console.error("Error in logging with google")
+        }
+    }
+
     async forgotPassword({ email, redirectUrl }) {
     try {
         const response = await this.account.createRecovery(email, redirectUrl);
