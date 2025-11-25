@@ -91,19 +91,26 @@ export class AuthService {
     }
 
     async googleLogin(){
-        try {
-            const response = await this.account.createOAuth2Session(
-                'google',
-                'http://localhost:5173',
-                'http://localhost:5173/login'
-            )
+    try {
+        const currentOrigin = window.location.origin;
+        const successUrl = `${currentOrigin}/`;
+        const failureUrl = `${currentOrigin}/login`;
 
-            console.log(response);
-            
-        } catch (error) {
-            console.error("Error in logging with google")
-        }
+        console.log("🌐 Current origin:", currentOrigin);
+        console.log("✅ Success URL:", successUrl);
+        console.log("❌ Failure URL:", failureUrl);
+
+        await this.account.createOAuth2Session(
+            'google',
+            successUrl,
+            failureUrl
+        );
+        
+    } catch (error) {
+        console.error("❌ Google OAuth error:", error);
+        throw new Error("Google login failed. Please try again.");
     }
+}
 
     async forgotPassword({ email, redirectUrl }) {
     try {
