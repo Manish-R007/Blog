@@ -29,7 +29,7 @@ Routing: React Router
 
 Editor: Rich Text Editor (tinymce) for content creation
 
-githubrepolink :https://lnkd.in/gyDigqNM
+githubrepolink :https://github.com/Manish-R007/Blog
 
 📊 Project Status
 
