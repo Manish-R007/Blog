@@ -126,20 +126,20 @@ export class AuthService {
 
     async forgotPassword({ email }) {
     try {
-        // Hardcoded production URL
-        const redirectUrl = import.meta.env.VITE_RESET_PASSWORD_URL 
+        // SIMPLE: Always use the current website's URL
+        const redirectUrl = `${window.location.origin}/reset-password`;
         
-        console.log("📧 Sending password reset email to:", email);
+        console.log("📧 Sending reset email to:", email);
+        console.log("🔗 Redirect URL:", redirectUrl);
         
         const response = await this.account.createRecovery(email, redirectUrl);
-        console.log("✅ Password reset link sent:", response);
         
         return {
             success: true,
             message: "Password reset email sent. Please check your inbox."
         };
     } catch (error) {
-        console.error("❌ Failed to send reset email:", error);
+        console.error("❌ Error:", error);
 
         let errorMessage = "Failed to send reset email. Try again later.";
         if (error.code === 404) {
@@ -152,7 +152,6 @@ export class AuthService {
         };
     }
 }
-
 async updatePassword({ userId, secret, newPassword }) {
     try {
         console.log("🔧 Update Password Debug:");
