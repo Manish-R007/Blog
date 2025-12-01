@@ -154,80 +154,38 @@ export class AuthService {
 }
 async updatePassword({ userId, secret, newPassword }) {
     try {
-        console.log("🔧 Update Password Debug:");
-        console.log("👤 User ID:", userId);
-        console.log("🔑 Secret:", secret ? "Present (length: " + secret.length + ")" : "Missing");
-        console.log("🔒 New Password:", newPassword ? "Present (length: " + newPassword.length + ")" : "Missing");
-        console.log("🌐 Appwrite Endpoint:", conf.appwriteUrl);
-        console.log("🆔 Project ID:", conf.appwriteProjectId);
-        
-        // Validate inputs
-        if (!userId || !userId.trim()) {
-            throw new Error("User ID is required");
+        console.log("🔧 Updating password...");
+        console.log("UserId:", userId);
+        console.log("Secret:", secret);
+
+        const response = await this.account.updateRecovery(
+            userId,
+            secret,
+            newPassword,
+            newPassword
+        );
+
+        console.log("✅ Password updated:", response);
+
+        return {
+            success: true,
+            message: "Password updated successfully!"
+        };
+    } catch (error) {
+        console.error("❌ Password update error:", error);
+
+        let errorMessage = "Failed to update password.";
+
+        if (error.code === 400) {
+            errorMessage = "Invalid or expired reset link.";
         }
-        if (!secret || !secret.trim()) {
-            throw new Error("Reset secret is required");
-        }
-        if (!newPassword || newPassword.length < 8) {
-            throw new Error("Password must be at least 8 characters");
+        if (error.code === 401) {
+            errorMessage = "Unauthorized. Invalid secret or userId.";
         }
 
-        // Clean inputs
-        const cleanUserId = userId.trim();
-        const cleanSecret = secret.trim();
-        
-        console.log("🔄 Calling Appwrite updateRecovery...");
-        
-        // Appwrite's updateRecovery method
-        const response = await this.account.updateRecovery(
-            cleanUserId,
-            cleanSecret,
-            newPassword,
-            newPassword  // Confirm password (same as new password)
-        );
-        
-        console.log("✅ Password updated successfully!");
-        console.log("Response:", response);
-        
-        return { 
-            success: true, 
-            message: "Password updated successfully! You can now login with your new password." 
-        };
-        
-    } catch (error) {
-        console.error("❌ Update Password ERROR:");
-        console.error("Error Code:", error.code);
-        console.error("Error Message:", error.message);
-        console.error("Error Type:", error.type);
-        console.error("Error Response:", error.response);
-        
-        // More specific error handling
-        let errorMessage = "Password update failed. Please try again.";
-        
-        if (error.code === 401) {
-            errorMessage = "Invalid or expired reset link. The link may have already been used.";
-        } else if (error.code === 404) {
-            errorMessage = "Reset link not found. Please request a new password reset.";
-        } else if (error.code === 400) {
-            if (error.message.includes('password')) {
-                errorMessage = "Password is too weak. Please use a stronger password (min 8 chars, mix of letters, numbers, symbols).";
-            } else if (error.message.includes('secret') || error.message.includes('token')) {
-                errorMessage = "Invalid reset token. Please request a new reset link.";
-            } else if (error.message.includes('userId') || error.message.includes('user')) {
-                errorMessage = "Invalid user. Please request a new reset link.";
-            } else if (error.message.includes('expired')) {
-                errorMessage = "Reset link has expired. Please request a new one.";
-            }
-        } else if (error.code === 422) {
-            errorMessage = "Password validation failed. Please use a different password.";
-        } else if (error.code === 500) {
-            errorMessage = "Server error. Please try again later.";
-        }
-        
-        return { 
-            success: false, 
-            message: errorMessage,
-            error: error.message 
+        return {
+            success: false,
+            message: errorMessage
         };
     }
 }
