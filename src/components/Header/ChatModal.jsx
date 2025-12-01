@@ -11,6 +11,9 @@ const ChatModal = ({ onClose }) => {
     const [showTemplates, setShowTemplates] = useState(true);
     const [templateSelected, setTemplateSelected] = useState(false);
 
+    // ✅ Use Railway URL for production
+    const API_URL = 'https://blog-backend-7-hhhh.onrender.com';
+
     // Blog-specific templates - Only 4 as requested
     const blogTemplates = [
         {
@@ -138,8 +141,8 @@ const ChatModal = ({ onClose }) => {
         setLoading(true);
 
         try {
-            // Send the template request to AI
-            const res = await axios.post('http://localhost:3000/askAi', {
+            // ✅ Fixed: Using API_URL variable
+            const res = await axios.post(`${API_URL}/askAi`, {
                 message: template.autoMessage,
                 conversationHistory: []
             });
@@ -187,7 +190,8 @@ const ChatModal = ({ onClose }) => {
             const enhancedMessage = `Create blog content with image suggestions: ${currentMessage}. 
             Please provide well-structured blog content with relevant image suggestions in a professional, ready-to-publish format.`;
 
-            const res = await axios.post('http://localhost:3000/askAi', {
+            // ✅ FIXED: Using API_URL instead of localhost
+            const res = await axios.post(`${API_URL}/askAi`, {
                 message: enhancedMessage,
                 conversationHistory: conversation.map(msg => ({
                     role: msg.type === 'user' ? 'user' : 'assistant',
