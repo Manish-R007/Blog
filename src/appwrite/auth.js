@@ -92,28 +92,45 @@ export class AuthService {
 
     async googleLogin(){
     try {
+        // Get current origin dynamically
         const currentOrigin = window.location.origin;
+        
+        // Create URLs with proper encoding
         const successUrl = `${currentOrigin}/`;
-        const failureUrl = `${currentOrigin}/login`;
+        const failureUrl = `${currentOrigin}/login?error=oauth_failed`;
+        
+        console.log("🔗 OAuth URLs:", { successUrl, failureUrl });
 
-        console.log("🌐 Current origin:", currentOrigin);
-        console.log("✅ Success URL:", successUrl);
-        console.log("❌ Failure URL:", failureUrl);
-
+        // Initiate OAuth flow
         await this.account.createOAuth2Session(
             'google',
             successUrl,
             failureUrl
         );
         
+        return { success: true };
+        
     } catch (error) {
         console.error("❌ Google OAuth error:", error);
-        throw new Error("Google login failed. Please try again.");
+        
+        // Handle specific error cases
+        if (error.type === 'user_oauth_cancelled') {
+            throw new Error("Google login was cancelled.");
+        } else if (error.code === 500) {
+            throw new Error("Server error during Google login. Please try again.");
+        } else {
+            throw new Error("Google login failed. Please try again.");
+        }
     }
 }
 
-    async forgotPassword({ email, redirectUrl }) {
+    async forgotPassword({ email }) {
     try {
+        // Hardcoded production URL
+        const redirectUrl = 'https://blogsphereai.vercel.app/reset-password';
+        
+        console.log("📧 Sending password reset email to:", email);
+        
         const response = await this.account.createRecovery(email, redirectUrl);
         console.log("✅ Password reset link sent:", response);
         
@@ -137,14 +154,84 @@ export class AuthService {
 }
 
 async updatePassword({ userId, secret, newPassword }) {
-        try {
-            const response = await this.account.updateRecovery(userId, secret, newPassword, newPassword);
-            return { success: true, message: "Password updated successfully!" };
-        } catch (error) {
-            console.log(error);
-            return { success: false, message: "Password update failed" };
+    try {
+        console.log("🔧 Update Password Debug:");
+        console.log("👤 User ID:", userId);
+        console.log("🔑 Secret:", secret ? "Present (length: " + secret.length + ")" : "Missing");
+        console.log("🔒 New Password:", newPassword ? "Present (length: " + newPassword.length + ")" : "Missing");
+        console.log("🌐 Appwrite Endpoint:", conf.appwriteUrl);
+        console.log("🆔 Project ID:", conf.appwriteProjectId);
+        
+        // Validate inputs
+        if (!userId || !userId.trim()) {
+            throw new Error("User ID is required");
         }
+        if (!secret || !secret.trim()) {
+            throw new Error("Reset secret is required");
+        }
+        if (!newPassword || newPassword.length < 8) {
+            throw new Error("Password must be at least 8 characters");
+        }
+
+        // Clean inputs
+        const cleanUserId = userId.trim();
+        const cleanSecret = secret.trim();
+        
+        console.log("🔄 Calling Appwrite updateRecovery...");
+        
+        // Appwrite's updateRecovery method
+        const response = await this.account.updateRecovery(
+            cleanUserId,
+            cleanSecret,
+            newPassword,
+            newPassword  // Confirm password (same as new password)
+        );
+        
+        console.log("✅ Password updated successfully!");
+        console.log("Response:", response);
+        
+        return { 
+            success: true, 
+            message: "Password updated successfully! You can now login with your new password." 
+        };
+        
+    } catch (error) {
+        console.error("❌ Update Password ERROR:");
+        console.error("Error Code:", error.code);
+        console.error("Error Message:", error.message);
+        console.error("Error Type:", error.type);
+        console.error("Error Response:", error.response);
+        
+        // More specific error handling
+        let errorMessage = "Password update failed. Please try again.";
+        
+        if (error.code === 401) {
+            errorMessage = "Invalid or expired reset link. The link may have already been used.";
+        } else if (error.code === 404) {
+            errorMessage = "Reset link not found. Please request a new password reset.";
+        } else if (error.code === 400) {
+            if (error.message.includes('password')) {
+                errorMessage = "Password is too weak. Please use a stronger password (min 8 chars, mix of letters, numbers, symbols).";
+            } else if (error.message.includes('secret') || error.message.includes('token')) {
+                errorMessage = "Invalid reset token. Please request a new reset link.";
+            } else if (error.message.includes('userId') || error.message.includes('user')) {
+                errorMessage = "Invalid user. Please request a new reset link.";
+            } else if (error.message.includes('expired')) {
+                errorMessage = "Reset link has expired. Please request a new one.";
+            }
+        } else if (error.code === 422) {
+            errorMessage = "Password validation failed. Please use a different password.";
+        } else if (error.code === 500) {
+            errorMessage = "Server error. Please try again later.";
+        }
+        
+        return { 
+            success: false, 
+            message: errorMessage,
+            error: error.message 
+        };
     }
+}
 
     
     async getCurrentUser(){
