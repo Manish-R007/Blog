@@ -12,7 +12,7 @@ const ChatModal = ({ onClose }) => {
     const [templateSelected, setTemplateSelected] = useState(false);
 
     // ✅ Use Railway URL for production
-    const API_URL = 'https://blog-backend-7-hhhh.onrender.com';
+    const API_URL = 'https://blog-backend-6-k4g8.onrender.com';
 
     // Blog-specific templates - Only 4 as requested
     const blogTemplates = [
