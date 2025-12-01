@@ -127,7 +127,7 @@ export class AuthService {
     async forgotPassword({ email }) {
     try {
         // Hardcoded production URL
-        const redirectUrl = 'https://blogsphereai.vercel.app/reset-password';
+        const redirectUrl = import.meta.env.VITE_RESET_PASSWORD_URL 
         
         console.log("📧 Sending password reset email to:", email);
         
