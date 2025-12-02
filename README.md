@@ -1,4 +1,4 @@
-🚀 Full-Stack Blogging CMS Application
+🚀 Full-Stack Blogging CMS Application AI
 A fully functional Content Management System designed for creating, managing, and publishing blog posts with a smooth and responsive UI. Built for scalability, security, and ease of use.
 
 ✨ Key Features:
